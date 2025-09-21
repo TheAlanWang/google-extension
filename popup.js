@@ -5,6 +5,9 @@ const out = document.getElementById('out');
 const txt = document.getElementById('txt');
 const q   = document.getElementById('q');   // 新增：问题输入框
 
+let languageModelSession = null;
+let languageModelPromise = null;
+
 // 尝试用 en→es→ja 挑一个可用的输出语言（只传 outputLanguage，避免其它语言字段触发不支持）
 const CANDIDATES = ['en', 'es', 'ja'];
 async function pickOutputLanguage() {
@@ -18,6 +21,52 @@ async function pickOutputLanguage() {
 }
 
 let OUT_LANG = 'en';  // 默认值，后面会用 pickOutputLanguage 更新
+
+function resolveLanguageModelAPI() {
+  if (typeof LanguageModel !== 'undefined') return LanguageModel;
+  if (self.ai?.languageModel) return self.ai.languageModel;
+  return null;
+}
+
+async function ensureLanguageModelSession() {
+  if (languageModelSession) return languageModelSession;
+  if (languageModelPromise) return languageModelPromise;
+
+  const LanguageModelAPI = resolveLanguageModelAPI();
+  if (!LanguageModelAPI || typeof LanguageModelAPI.availability !== 'function') {
+    console.info('LanguageModel API not available in this environment');
+    return null;
+  }
+
+  languageModelPromise = (async () => {
+    try {
+      const availability = await LanguageModelAPI.availability();
+      console.info('LanguageModel.availability', availability);
+      if (availability !== 'available') {
+        return null;
+      }
+      const session = await LanguageModelAPI.create({
+        monitor(m) {
+          m.addEventListener('downloadprogress', (e) => {
+            const pct = Math.round((e.loaded || 0) * 100);
+            statusEl.textContent = `Loading AI model… ${pct}%`;
+          });
+        },
+      });
+      statusEl.textContent = 'AI model ready.';
+      languageModelSession = session;
+      return session;
+    } catch (error) {
+      console.error('Failed to initialize LanguageModel session', error);
+      statusEl.textContent = 'Prompt API unavailable.';
+      return null;
+    } finally {
+      languageModelPromise = null;
+    }
+  })();
+
+  return languageModelPromise;
+}
 
 // ---------- Availability ----------
 (async () => {
@@ -97,6 +146,28 @@ document.getElementById('ask').addEventListener('click', async () => {
   statusEl.textContent = 'Answering…';
 
   try {
+    const promptSession = await ensureLanguageModelSession();
+
+    if (promptSession) {
+      try {
+        const prompt = [
+          'You are a precise assistant. Answer using ONLY the provided context. ',
+          'If the answer is missing, reply exactly: "Not mentioned".',
+          `Context:\n${context}`,
+          `Question: ${question}`,
+          'Answer:',
+        ].join('\n\n');
+        const response = await promptSession.prompt(prompt);
+        const answerText = typeof response === 'string' ? response : response?.output ?? '';
+        const cleaned = (answerText || '').trim();
+        out.textContent = cleaned || 'Not mentioned';
+        statusEl.textContent = 'Done.';
+        return;
+      } catch (err) {
+        console.error('LanguageModel prompt failed', err);
+      }
+    }
+
     if ('Writer' in self) {
       // 优先用 Writer：更像问答
       const w = await Writer.create({
@@ -174,3 +245,15 @@ document.getElementById('writer').addEventListener('click', async () => {
     out.textContent = e.stack || e.message;
   }
 });
+
+if (chrome?.runtime?.onSuspend) {
+  chrome.runtime.onSuspend.addListener(() => {
+    try {
+      languageModelSession?.destroy?.();
+    } catch (err) {
+      console.debug('LanguageModel destroy failed', err);
+    } finally {
+      languageModelSession = null;
+    }
+  });
+}
