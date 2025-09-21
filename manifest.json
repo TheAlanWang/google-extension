@@ -1,0 +1,12 @@
+{
+  "manifest_version": 3,
+  "name": "Built‑in AI Minimal Test (CSP Clean)",
+  "version": "0.2.1",
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "permissions": [
+    "activeTab",
+    "scripting"
+  ]
+}

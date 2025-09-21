@@ -1,0 +1,56 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Built-in AI Test</title>
+
+  <!-- Writer OT token（必须放在脚本之前；需与当前扩展 ID 匹配） -->
+  <meta http-equiv="origin-trial" content="A3bF9cMI7pt+Fv9j3y5ESc0wPxfOw5eK4gyKmTffT04w7LwIR0Ze1sGQle4lX9YnzxifXTcYQewwsGUwC03UkQIAAACAeyJvcmlnaW4iOiJjaHJvbWUtZXh0ZW5zaW9uOi8vZm5jY2JmamNmam1pYmpkbWNka3BrcGNvY3BnZGtnY20iLCJmZWF0dXJlIjoiQUlXcml0ZXJBUEkiLCJleHBpcnkiOjE3Njk0NzIwMDAsImlzVGhpcmRQYXJ0eSI6dHJ1ZX0=">
+
+  <style>
+    :root { color-scheme: light dark; }
+    body{font-family:system-ui,Segoe UI,Roboto,sans-serif;margin:12px;width:380px}
+    h3{margin:0 0 8px 0}
+    .row{margin:8px 0}
+    textarea, input{
+      width:100%; box-sizing:border-box; padding:8px;
+      border:1px solid #ccc; border-radius:8px; outline:none;
+    }
+    button{padding:6px 10px; border:0; border-radius:8px; cursor:pointer; margin-right:6px}
+    pre{background:#f6f7f9; padding:10px; border-radius:8px; white-space:pre-wrap}
+    .mono{font-family:ui-monospace,Menlo,Consolas,monospace; font-size:12px}
+    .hint{color:#888; font-size:12px}
+  </style>
+</head>
+<body>
+  <h3>Chrome Built-in AI Playground</h3>
+  <div class="mono" id="avail">Checking…</div>
+
+  <!-- 网页内容区 -->
+  <div class="row">
+    <textarea id="txt" rows="6" placeholder="Paste some text here…"></textarea>
+    <div class="hint">可先点击下方“抓取当前页选中文本”自动填充</div>
+  </div>
+
+  <!-- 动作按钮 -->
+  <div class="row">
+    <button id="grab">抓取当前页选中文本</button>
+    <button id="sum">Summarize</button>
+    <button id="writer">Writer(需 token)</button>
+  </div>
+
+  <!-- Q&A 输入区（基于上面文本回答问题） -->
+  <div class="row">
+    <input id="q" type="text" placeholder="在这里输入你的问题…" />
+    <div style="margin-top:8px">
+      <button id="ask">Ask (Q&A)</button>
+    </div>
+  </div>
+
+  <div class="mono" id="status"></div>
+  <pre id="out"></pre>
+
+  <!-- 外链脚本（MV3 CSP 合规） -->
+  <script type="module" src="popup.js"></script>
+</body>
+</html>
